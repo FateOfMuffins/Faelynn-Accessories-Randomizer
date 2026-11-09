@@ -1,10 +1,11 @@
 [CmdletBinding()]
 param(
-    [string]$OutputPath = (Join-Path $PSScriptRoot 'dist\Faelynn-Accessories-Randomizer-Setup.exe'),
+    [string]$OutputPath,
     [switch]$Test
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $OutputPath) { $OutputPath = Join-Path $PSScriptRoot 'dist\Faelynn-Accessories-Randomizer-Setup.exe' }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path -LiteralPath $compiler)) {
     $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
@@ -16,9 +17,12 @@ if (-not (Test-Path -LiteralPath $compiler)) {
 $out = [IO.Path]::GetFullPath($OutputPath)
 [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($out))
 $sources = Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.cs' -File
+$framework = Split-Path -Parent $compiler
 $arguments = @(
     '/nologo', '/target:winexe', '/optimize+', '/warnaserror+', "/out:$out",
     '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', '/reference:Microsoft.CSharp.dll',
+    "/reference:$framework\WPF\PresentationFramework.dll", "/reference:$framework\WPF\PresentationCore.dll",
+    "/reference:$framework\WPF\WindowsBase.dll", "/reference:$framework\System.Xaml.dll",
     "/resource:$PSScriptRoot\GF2-Accessories.png,GF2-Accessories.png",
     "/resource:$PSScriptRoot\GF2-Splash.png,GF2-Splash.png"
 )
@@ -34,6 +38,6 @@ if ($Test) {
         if (Test-Path -LiteralPath $failure) { Get-Content -LiteralPath $failure }
         throw "Self-test failed (exit $($process.ExitCode))."
     }
-    Write-Output 'Passed: all 27 grid outcomes, default and custom launch delays, both transparent art surfaces, and install/save/uninstall in an isolated directory.'
+    Write-Output 'Passed: roll mapping, timers, overlay art, setup transparency and Close, and isolated install/save/uninstall.'
 }
 Write-Output $out

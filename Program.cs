@@ -1,11 +1,11 @@
 using System;
 using System.Reflection;
-using System.Windows.Forms;
+using System.Windows;
 
 [assembly: AssemblyTitle("Faelynn Accessories Randomizer")]
 [assembly: AssemblyProduct("Faelynn Accessories Randomizer")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyFileVersion("1.0.1.0")]
 
 namespace FaelynnRandomizer
 {
@@ -26,26 +26,37 @@ namespace FaelynnRandomizer
                 {
                     Watcher.SelfTest();
                     Installation.SelfTest(args[1]);
+                    SetupForm.SelfTest(args[1]);
                     return 0;
                 }
-                int roll;
-                if (args.Length == 2 && args[0] == "--preview" &&
-                    Int32.TryParse(args[1], out roll) && roll >= 1 && roll <= 28)
+                int value;
+                if ((args.Length == 2 || args.Length == 3) && args[0] == "--install" &&
+                    Int32.TryParse(args[1], out value) &&
+                    (args.Length == 2 || args[2] == "--start-at-sign-in"))
                 {
-                    Watcher.Preview(roll);
+                    installation.Apply(value, args.Length == 3);
+                    return 0;
+                }
+                if (args.Length == 1 && args[0] == "--uninstall")
+                {
+                    installation.Remove();
+                    return 0;
+                }
+                if (args.Length == 2 && args[0] == "--preview" &&
+                    Int32.TryParse(args[1], out value) && value >= 1 && value <= 28)
+                {
+                    Watcher.Preview(value);
                     return 0;
                 }
                 if (args.Length != 0) return 2;
 
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
-                using (var setup = new SetupForm(installation)) Application.Run(setup);
-                return 0;
+                var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
+                return app.Run(new SetupForm(installation));
             }
             catch (Exception error)
             {
                 if (args.Length == 0)
-                    MessageBox.Show(error.Message, Installation.Product, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(error.Message, Installation.Product, MessageBoxButton.OK, MessageBoxImage.Error);
                 else if (args[0] == "--self-test")
                 {
                     System.IO.Directory.CreateDirectory(args[1]);
