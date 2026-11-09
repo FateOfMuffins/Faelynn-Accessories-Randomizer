@@ -10,7 +10,7 @@ Picks a Faelynn outfit when you launch GF2. There are 28 combinations, including
 
 Run setup and click **Install**. The overlay appears 30 seconds after GF2 starts. Click it to close.
 
-Open **Faelynn Accessories Randomizer** from the Start menu to change the delay. Settings save automatically. With **Start at sign-in** off, click **Start** before launching GF2.
+To change the delay, open **Faelynn Accessories Randomizer** from Start.
 
 ## Build
 
