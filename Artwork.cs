@@ -8,7 +8,7 @@ namespace FaelynnRandomizer
 {
     internal static class Art
     {
-        // These are the gutters in the approved transparent 3x3 sheet.
+        // Row edges as fractions of the PNG height.
         private static readonly float[] RowEdges = { .073f, .361f, .660f, .973f };
 
         internal static int Column(int roll, int row)

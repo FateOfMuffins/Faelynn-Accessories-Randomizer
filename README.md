@@ -8,7 +8,9 @@ There are 28 outfit combinations, including the default. The overlay shows one e
 
 Download the [Windows setup app](https://github.com/FateOfMuffins/Faelynn-Accessories-Randomizer/releases/latest/download/Faelynn-Accessories-Randomizer-Setup.exe) and click **Install**.
 
-The overlay appears **30 seconds** after GF2 starts. To change the delay, open **Faelynn Accessories Randomizer** from the Start menu, enter a new time, and click **Save**. The change takes effect on the next launch.
+The default delay is **30 seconds**. To change it, open **Faelynn Accessories Randomizer** from the Start menu, enter a new time, then press Enter or leave the field.
+
+With **Start at sign-in** off, open the app and click **Start** before launching GF2.
 
 ## Build
 

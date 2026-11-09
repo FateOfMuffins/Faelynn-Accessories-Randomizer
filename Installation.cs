@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 
 namespace FaelynnRandomizer
 {
-    // This is a per-user installation. It never touches the game directory or requires elevation.
     internal sealed class Installation
     {
         internal const string Product = "Faelynn Accessories Randomizer";
@@ -25,6 +24,7 @@ namespace FaelynnRandomizer
         private string ErrorLog { get { return Path.Combine(directory, "errors.log"); } }
         internal bool IsInstalled { get { return File.Exists(Executable); } }
         internal bool StartsAtSignIn { get { return File.Exists(StartupLink); } }
+        internal bool WatcherRunning { get { return HasSignal(Watcher.StopEvent); } }
 
         internal Installation() : this(
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -32,7 +32,7 @@ namespace FaelynnRandomizer
             Environment.GetFolderPath(Environment.SpecialFolder.Startup),
             Environment.GetFolderPath(Environment.SpecialFolder.Programs)) { }
 
-        private Installation(string directory, string startup, string programs)
+        internal Installation(string directory, string startup, string programs)
         {
             this.directory = directory;
             this.startup = startup;
@@ -53,25 +53,49 @@ namespace FaelynnRandomizer
                 && seconds >= MinDelay && seconds <= MaxDelay ? seconds : DefaultDelay;
         }
 
-        internal void Apply(int delay, bool atSignIn, bool startWatcher = true)
+        internal void Apply(int delay, bool atSignIn, bool manageWatcher = true)
         {
-            if (delay < MinDelay || delay > MaxDelay) throw new ArgumentOutOfRangeException("delay");
-            if (startWatcher && (HasSignal(@"Local\GF2AccessoryOverlay.Stop") ||
-                File.Exists(Path.Combine(startup, "GF2 Overlay Watcher.lnk"))))
-                throw new InvalidOperationException("The older GF2 overlay is still running or set to start at sign-in. "
-                    + "Remove the old Startup shortcut and stop that watcher first. See Migration in the README.");
+            ValidateDelay(delay);
+            if (manageWatcher) CheckForLegacyWatcher();
+            bool wasInstalled = IsInstalled;
+            bool wasRunning = manageWatcher && WatcherRunning;
 
             Directory.CreateDirectory(directory);
             string source = System.Windows.Forms.Application.ExecutablePath;
             bool sameFile = String.Equals(source, Executable, StringComparison.OrdinalIgnoreCase);
-            if (!sameFile && (!IsInstalled || !File.ReadAllBytes(source).SequenceEqual(File.ReadAllBytes(Executable))))
+            if (!sameFile && (!wasInstalled || HasUpdate))
             {
-                if (startWatcher) StopWatcher();
+                if (manageWatcher) StopWatcher();
                 string staged = Executable + ".new";
                 try { File.Copy(source, staged, true); Replace(staged, Executable); }
                 finally { File.Delete(staged); }
             }
 
+            SaveDelay(delay);
+            WriteShortcut(ProgramsLink, "");
+            SaveSignIn(atSignIn);
+
+            if (manageWatcher && (!wasInstalled || wasRunning)) StartWatcher();
+        }
+
+        internal bool HasUpdate
+        {
+            get
+            {
+                string source = System.Windows.Forms.Application.ExecutablePath;
+                return IsInstalled && !String.Equals(source, Executable, StringComparison.OrdinalIgnoreCase)
+                    && !File.ReadAllBytes(source).SequenceEqual(File.ReadAllBytes(Executable));
+            }
+        }
+
+        private static void ValidateDelay(int delay)
+        {
+            if (delay < MinDelay || delay > MaxDelay) throw new ArgumentOutOfRangeException("delay");
+        }
+
+        internal void SaveDelay(int delay)
+        {
+            ValidateDelay(delay);
             string pending = DelayFile + ".new";
             try
             {
@@ -79,17 +103,30 @@ namespace FaelynnRandomizer
                 Replace(pending, DelayFile);
             }
             finally { File.Delete(pending); }
-
-            WriteShortcut(ProgramsLink, "");
-            if (atSignIn) WriteShortcut(StartupLink, "--watch");
-            else File.Delete(StartupLink);
-            if (startWatcher && !HasSignal(Watcher.StopEvent))
-                using (Process.Start(new ProcessStartInfo(Executable, "--watch") {
-                    UseShellExecute = false, WorkingDirectory = directory })) { }
         }
 
-        // A running Windows executable cannot delete itself. The installed settings UI
-        // defers deletion of that one file until its own process exits.
+        internal void SaveSignIn(bool atSignIn)
+        {
+            if (atSignIn) WriteShortcut(StartupLink, "--watch");
+            else File.Delete(StartupLink);
+        }
+
+        internal void StartWatcher()
+        {
+            if (!IsInstalled) throw new InvalidOperationException("Install the randomizer first.");
+            CheckForLegacyWatcher();
+            if (WatcherRunning) return;
+            using (Process.Start(new ProcessStartInfo(Executable, "--watch") {
+                UseShellExecute = false, WorkingDirectory = directory })) { }
+        }
+
+        private void CheckForLegacyWatcher()
+        {
+            if (HasSignal(@"Local\GF2AccessoryOverlay.Stop") ||
+                File.Exists(Path.Combine(startup, "GF2 Overlay Watcher.lnk")))
+                throw new InvalidOperationException("Stop the old GF2 watcher and remove its Startup shortcut first.");
+        }
+
         internal bool Remove(bool stopWatcher = true)
         {
             File.Delete(StartupLink);
@@ -105,6 +142,7 @@ namespace FaelynnRandomizer
                 return false;
             }
 
+            // The installed executable can only be deleted after it exits.
             int pid;
             using (var current = Process.GetCurrentProcess()) pid = current.Id;
             string command = "Wait-Process -Id " + pid.ToString(CultureInfo.InvariantCulture)

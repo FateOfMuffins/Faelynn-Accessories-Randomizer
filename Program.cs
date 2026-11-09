@@ -4,8 +4,8 @@ using System.Windows;
 
 [assembly: AssemblyTitle("Faelynn Accessories Randomizer")]
 [assembly: AssemblyProduct("Faelynn Accessories Randomizer")]
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
 
 namespace FaelynnRandomizer
 {

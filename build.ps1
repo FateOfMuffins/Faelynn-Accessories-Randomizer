@@ -38,6 +38,6 @@ if ($Test) {
         if (Test-Path -LiteralPath $failure) { Get-Content -LiteralPath $failure }
         throw "Self-test failed (exit $($process.ExitCode))."
     }
-    Write-Output 'Passed: roll mapping, timers, overlay art, setup transparency and Close, and isolated install/save/uninstall.'
+    Write-Output 'Passed: roll mapping, timers, setup layout and Close, autosave, and isolated install/uninstall.'
 }
 Write-Output $out

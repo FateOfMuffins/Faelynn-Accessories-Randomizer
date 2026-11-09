@@ -29,7 +29,7 @@ namespace FaelynnRandomizer
                 dib = Native.CreateDIBSection(dc, ref info, 0, out pixels, IntPtr.Zero, 0);
                 if (dib == IntPtr.Zero || pixels == IntPtr.Zero) throw new Win32Exception();
 
-                // Win32 expects premultiplied pixels. Ignore barely visible matte noise for hit-testing.
+                // Clear near-zero alpha so invisible pixels don't catch clicks.
                 var data = bitmap.LockBits(new Rectangle(0, 0, width, height),
                     ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
                 try
@@ -137,7 +137,7 @@ namespace FaelynnRandomizer
         {
             if (message.Msg == 0x0021 || message.Msg == 0x024B) // WM_MOUSEACTIVATE or WM_POINTERACTIVATE
             {
-                message.Result = new IntPtr(3); // Deliver input without activating.
+                message.Result = new IntPtr(3); // MA_NOACTIVATE / PA_NOACTIVATE
                 return;
             }
             base.WndProc(ref message);
@@ -208,7 +208,7 @@ namespace FaelynnRandomizer
                 if (next != alpha) { art.Present(Handle, placement, next); alpha = next; }
                 if (!raisedAgain && fadeOutAt < 0 && now >= 500)
                 {
-                    // Reassert topmost after fade-in, without foreground activation.
+                    // GF2 can cover the overlay during fade-in.
                     RaiseTopmost(true);
                     raisedAgain = true;
                     frame.Interval = 125;

@@ -72,7 +72,7 @@ namespace FaelynnRandomizer
                         int pid;
                         try
                         {
-                            // Enumeration and start time identify a launch without requesting a synchronization handle.
+                            // HasExited can return Access Denied for GF2.
                             if (process.SessionId != session) continue;
                             pid = process.Id;
                             started = process.StartTime.ToUniversalTime();
@@ -84,7 +84,7 @@ namespace FaelynnRandomizer
                         Launch launch;
                         if (!watched.TryGetValue(pid, out launch) || launch.Started != started)
                         {
-                            // Capture the preference per launch so settings never reroll a running game.
+                            // Delay changes apply to the next launch.
                             watched[pid] = launch = new Launch(started, watchingSince, installation.ReadDelay());
                         }
                         launch.RollWhenDue(DateTime.UtcNow, delegate { return random.Next(1, 29); });
